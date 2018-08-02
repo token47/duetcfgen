@@ -1,0 +1,2 @@
+# duetcfgen
+Duet Config Generator
