@@ -36,30 +36,41 @@ create_subdir() {
 }
 
 upload_by_ftp() {
+	# This is crap, we need a better way to send files
+	# 1. this is not recursive, for now you will have to list subdirs here
+	# 2. a lot of times duet will refuse connection, don't know why
+	# 3. It will not create new dirs on the other side
+	# 4. It will complain that subdirs are not plain files when uploading their parent
 	log "uploading to the board by FTP"
 	ftp -in $DUET_IP_ADDRESS <<-EOF
 		user duet ${PRINTER_PASSWORD:-nopasswd}
 		cd /sys
-		lcd ${BUILDDIR}/sys
+		lcd $(pwd)/${BUILDDIR}/sys
 		mput *
 		cd /macros
-		lcd ../../${BUILDDIR}/macros
+		lcd $(pwd)/${BUILDDIR}/macros
+		mput *
+		cd /macros/Load_and_Unload
+		lcd $(pwd)/${BUILDDIR}/macros/Load_and_Unload
 		mput *
 		bye
 	EOF
 }
 
 download_by_ftp() {
+	# This is broken.
+	# 1. it does not work, duet will go crazy about the mget
+	# 2. it is not directory recursive and will not get subdirs
 	log "downloading from the board by FTP (backup)"
 	create_subdir "./$BACKUPDIR/sys/"
 	create_subdir "./$BACKUPDIR/macros/"
 	ftp -in $DUET_IP_ADDRESS <<-EOF
 		user duet ${PRINTER_PASSWORD:-nopasswd}
 		cd /sys
-		lcd ${BACKUPDIR}/sys
+		lcd $(pwd)/${BACKUPDIR}/sys
 		mget *
 		cd /macros
-		lcd ../../${BACKUPDIR}/macros
+		lcd $(pwd)/${BACKUPDIR}/macros
 		mget *
 		bye
 	EOF
