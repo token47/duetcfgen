@@ -43,7 +43,8 @@ upload_by_ftp() {
 	# 4. It will complain that subdirs are not plain files when uploading their parent
 	log "uploading to the board by FTP"
 	ftp -in $DUET_IP_ADDRESS <<-EOF
-		user duet ${PRINTER_PASSWORD:-nopasswd}
+		quote USER duet
+		quote PASS ${PRINTER_PASSWORD:-nopasswd}
 		cd /sys
 		lcd $(pwd)/${BUILDDIR}/sys
 		mput *
@@ -64,13 +65,18 @@ download_by_ftp() {
 	log "downloading from the board by FTP (backup)"
 	create_subdir "./$BACKUPDIR/sys/"
 	create_subdir "./$BACKUPDIR/macros/"
+	create_subdir "./$BACKUPDIR/macros/Load_and_Unload"
 	ftp -in $DUET_IP_ADDRESS <<-EOF
-		user duet ${PRINTER_PASSWORD:-nopasswd}
+		quote USER duet
+		quote PASS ${PRINTER_PASSWORD:-nopasswd}
 		cd /sys
 		lcd $(pwd)/${BACKUPDIR}/sys
 		mget *
 		cd /macros
 		lcd $(pwd)/${BACKUPDIR}/macros
+		mget *
+		cd /macros/Load_and_Unload
+		lcd $(pwd)/${BUILDDIR}/macros/Load_and_Unload
 		mget *
 		bye
 	EOF
