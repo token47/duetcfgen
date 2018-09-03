@@ -38,9 +38,8 @@ create_subdir() {
 upload_by_ftp() {
 	# This is crap, we need a better way to send files
 	# 1. this is not recursive, for now you will have to list subdirs here
-	# 2. a lot of times duet will refuse connection, don't know why
-	# 3. It will not create new dirs on the other side
-	# 4. It will complain that subdirs are not plain files when uploading their parent
+	# 2. It will not create new dirs on the other side
+	# 3. It will complain that subdirs are not plain files when uploading their parent
 	log "uploading to the board by FTP"
 	ftp -in $DUET_IP_ADDRESS <<-EOF
 		quote USER duet
