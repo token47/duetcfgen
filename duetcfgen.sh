@@ -36,11 +36,11 @@ create_subdir() {
 }
 
 upload_by_ftp() {
+	log "uploading to the board by FTP"
 	# This is crap, we need a better way to send files
 	# 1. this is not recursive, for now you will have to list subdirs here
 	# 2. It will not create new dirs on the other side
 	# 3. It will complain that subdirs are not plain files when uploading their parent
-	log "uploading to the board by FTP"
 	ftp -in $DUET_IP_ADDRESS <<-EOF
 		quote USER duet
 		quote PASS ${PRINTER_PASSWORD:-nopasswd}
@@ -55,6 +55,11 @@ upload_by_ftp() {
 		mput *
 		bye
 	EOF
+
+	# This is better and seems to work well
+	# cd $(pwd)/${BUILDDIR}/
+	# ncftpput -u duet -p "${PRINTER_PASSWORD:-nopasswd}" -v -F -R -r 2 "$DUET_IP_ADDRESS" / .
+	# cd - 2>&1 1>/dev/null
 }
 
 download_by_ftp() {
@@ -79,6 +84,7 @@ download_by_ftp() {
 		mget *
 		bye
 	EOF
+	#ncftpget -u duet -p "${PRINTER_PASSWORD:-nopasswd}" -vv -F -R -T "$DUET_IP_ADDRESS" / ./
 }
 
 reboot_duet_by_telnet() {
