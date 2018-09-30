@@ -30,3 +30,6 @@ And...
 I'm using it for a few days and liking it a lot. It is really productive, specially when building the printer and doing all sorts of calibrations and configurations for the first time.
 
 Sugestions are welcome.
+
+PS: please ignore the .py, .toml and .jinja files for now, it's an ongoing port to python, not yet functional.
+
