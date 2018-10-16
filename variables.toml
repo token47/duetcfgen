@@ -3,7 +3,7 @@
 #
 
 printer.board = "duet2wifi"                    # duet2wifi or duet2ethernet
-printer.name = "TP004"                         # name to appear on the interface
+printer.name = "name-of-printer"               # name to appear on the interface
 printer.password = "webpassword"               # password for web/ftp/telnet (default is not password)
 
 net.ip_address = "192.168.47.144"              # IP address to reach the duet

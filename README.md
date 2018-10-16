@@ -31,5 +31,5 @@ I'm using it for a few days and liking it a lot. It is really productive, specia
 
 Sugestions are welcome.
 
-PS: please ignore the .py, .toml and .jinja files for now, it's an ongoing port to python, not yet functional.
+PS: the .py, .toml and .jinja files for a python port which is ongoing, but already functional
 

@@ -2,6 +2,8 @@
 
 # Duet config generator, by Andre Ruiz <andre.ruiz@gmail.com>
 # Please contribute at https://github.com/token47/duetcfgen
+# Note: I'm not an experienced programmer, if you feel an uncontrollable need to fix my
+#       mistakes, please do it and send changes back to me, I'll appreciate.
 
 import sys, os, re, shutil
 import tomlkit as toml
@@ -14,8 +16,14 @@ comment_column = 50
 
 def load_variables(rootdir, filename):
 
-    with open(rootdir + '/' + filename,'r',encoding='utf-8') as f:
+    with open(rootdir + '/' + filename, 'r', encoding='utf-8') as f:
         variables = toml.parse(f.read())
+    try:
+        with open(os.path.expanduser('~/.duetcfgenvars.toml'), 'r', encoding='utf-8') as f:
+            user_variables = toml.parse(f.read())
+        return array_merge(variables, user_variables)
+    except:
+        pass
     return variables
 
 def load_template(rootdir, filename, variables):
@@ -89,13 +97,22 @@ def generate_config():
             continue
         write_cfg_line(line)
 
+def array_merge(destination, source):
+    for key, value in source.items():
+        if isinstance(value, dict):
+            node = destination.setdefault(key, {})
+            array_merge(node, value)
+        else:
+            destination[key] = value
+    return destination
+
 def connect_ftp():
 
     global duet_ftp
 
     log_normal("connecting to the Duet by FTP")
     try:
-        duet_ftp = ftptool.FTPHost.connect(variables['net']['ip_address'], user="duet", password=variables['printer']['password'], timeout=10)
+        duet_ftp = ftptool.FTPHost.connect(host=variables['net']['ip_address'], user="duet", password=variables['printer']['password'], timeout=10)
     except Exception as e:
         log_error("Could not connect to duet. Reason: " + str(e))
 
@@ -110,14 +127,18 @@ def upload_by_ftp():
 
     global duet_ftp
 
+    log_normal('uploading files to duet, please wait')
     duet_ftp.mirror_to_remote(build_dir, "/")
+    log_normal('uploading finished')
 
 def download_by_ftp():
 
     global duet_ftp
 
     initialize_backup_dir()
+    log_normal('downloading files from duet, please wait')
     duet_ftp.mirror_to_local("/", backup_dir)
+    log_normal('downloading finished')
     
 
 variables = load_variables(root_dir, "variables.toml")
