@@ -112,7 +112,8 @@ def connect_ftp():
 
     log_normal("connecting to the Duet by FTP")
     try:
-        duet_ftp = ftptool.FTPHost.connect(host=variables['net']['ip_address'], user="duet", password=variables['printer']['password'], timeout=10)
+        duet_ftp = ftptool.FTPHost.connect(host=variables['net']['ip_address'], user="duet",
+                password=variables['printer']['password'], debuglevel=0, timeout=10)
     except Exception as e:
         log_error("Could not connect to duet. Reason: " + str(e))
 
