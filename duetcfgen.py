@@ -7,7 +7,8 @@
 
 import sys, os, re, shutil
 import tomlkit as toml
-import jinja2, ftptool
+import jinja2
+import ftptool
 
 root_dir = os.path.dirname(sys.argv[0]) or '.'
 build_dir = "build"
