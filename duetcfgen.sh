@@ -41,7 +41,7 @@ upload_by_ftp() {
 	# 1. this is not recursive, for now you will have to list subdirs here
 	# 2. It will not create new dirs on the other side
 	# 3. It will complain that subdirs are not plain files when uploading their parent
-	ftp -in $DUET_IP_ADDRESS <<-EOF
+	ftp -inp $DUET_IP_ADDRESS <<-EOF
 		quote USER duet
 		quote PASS ${PRINTER_PASSWORD:-nopasswd}
 		cd /sys
@@ -70,7 +70,7 @@ download_by_ftp() {
 	create_subdir "./$BACKUPDIR/sys/"
 	create_subdir "./$BACKUPDIR/macros/"
 	create_subdir "./$BACKUPDIR/macros/Load_and_Unload"
-	ftp -in $DUET_IP_ADDRESS <<-EOF
+	ftp -inp $DUET_IP_ADDRESS <<-EOF
 		quote USER duet
 		quote PASS ${PRINTER_PASSWORD:-nopasswd}
 		cd /sys
