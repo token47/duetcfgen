@@ -47,12 +47,14 @@ upload_by_ftp() {
 		cd /sys
 		lcd $(pwd)/${BUILDDIR}/sys
 		mput *
+		cd /filaments
+		lcd $(pwd)/${BUILDDIR}/filaments
+		mput *
+		mput */*
 		cd /macros
 		lcd $(pwd)/${BUILDDIR}/macros
 		mput *
-		cd /macros/Load_and_Unload
-		lcd $(pwd)/${BUILDDIR}/macros/Load_and_Unload
-		mput *
+		mput */*
 		bye
 	EOF
 
@@ -68,6 +70,7 @@ download_by_ftp() {
 	# 2. it is not directory recursive and will not get subdirs
 	log "downloading from the board by FTP (backup)"
 	create_subdir "./$BACKUPDIR/sys/"
+	create_subdir "./$BACKUPDIR/filaments/"
 	create_subdir "./$BACKUPDIR/macros/"
 	create_subdir "./$BACKUPDIR/macros/Load_and_Unload"
 	ftp -inp $DUET_IP_ADDRESS <<-EOF
@@ -75,6 +78,9 @@ download_by_ftp() {
 		quote PASS ${PRINTER_PASSWORD:-nopasswd}
 		cd /sys
 		lcd $(pwd)/${BACKUPDIR}/sys
+		mget *
+		cd /filaments
+		lcd $(pwd)/${BACKUPDIR}/filaments
 		mget *
 		cd /macros
 		lcd $(pwd)/${BACKUPDIR}/macros
