@@ -33,18 +33,19 @@ M84 S${IDLE_TIMEOUT}                   ; Set idle timeout
 M208 X${X_LIMITS[MIN]}:${X_LIMITS[MAX]} Y${Y_LIMITS[MIN]}:${Y_LIMITS[MAX]} Z-1:${BED_SIZE[Z]} ; Set axis minimum/maximum values (z-min=-1 is to enable babystepping to negative values)
 
 ; Endstops
-M574 X1 Y1 S3                          ; Set X/Y endstops to use sensorless motor load detection
-M574 Z1 S2                             ; Set Z endstop to read the probe
+M574 X1 Y1 S3                          ; Set endstops to use sensorless motor load detection
 
 ; Z-Probe
-M558 P4 C2 I0 H${PROBE_DIVE_HEIGHT} R0.0 S0.03 B0 T$((XY_SPEEDS[FAST]*60)) A5 F$((Z_SPEEDS[MEDIUM]*60)) ; Set Z probe type to switch and the dive height + speeds
-G31 X${PROBE_OFFSET[X]} Y${PROBE_OFFSET[Y]} ; Set Z probe trigger value and offsets (config-override'd!!!)
+M574 Z1 S2                             ; Set endstops controlled by probe
+M558 P5 I1 H${PROBE_DIVE_HEIGHT} R0.0 S0.03 B0 T$((XY_SPEEDS[FAST]*60)) A5 F$((Z_SPEEDS[MEDIUM]*60)) ; Set Z probe type to switch and the dive height + speeds
+G31 P600 X${PROBE_OFFSET[X]} Y${PROBE_OFFSET[Y]} ; Set Z probe trigger type and offsets
 M557 X${MESH_X} Y${MESH_Y} S${MESH_STEP} ; Define mesh grid
 
 ; Bed and Compensation
 M376 H${BED_COMP_TAPER}                ; limit compensation to this high
 
 ; Heaters
+M307 H${SERVO_HEATER_PIN} A-1 C-1 D-1  ; Disable Heater pin used by probe servo motor
 M307 H0 B0 ${HEATER_H0}                ; Disable bang-bang and tune heating parameters
 M307 H1 B0 ${HEATER_H1}                ; Disable bang-bang and tune heating parameters
 M305 P0 T100000 B4138 C0 R4700         ; Set thermistor + ADC parameters for heater 0
@@ -53,7 +54,7 @@ M143 H0 S120                           ; Set temperature limit for heater 0 to 1
 M143 H1 S260                           ; Set temperature limit for heater 1 to 260C
 
 ; Fans
-M106 P0 I0 F500 H-1 C"partfan1"        ; Set fan 0 to disabled
+M106 P0 I-1 C"partfan1"                ; Set fan 0 to disabled
 M106 P1 I0 F500 H1 T45 C"heatsinkfan1" ; Set fan 1 to active with hotend 1 at 45C
 M106 P2 I0 F500 H100:101:102 T50:70 C"cpu" ; Set fan 2 as CPU cooling (Vheater 100==CPU 101+102==drivers, Temp 50C->70C == 0% to 100% speed)
 
@@ -77,14 +78,16 @@ T0                                     ; Select first tool
 ##########################################################################
 @file sys/deployprobe.g
 
-M300 S4000 P1500                       ; play a beep to ask for probe deploy
-M577 Z0 S0                             ; wait until Z endstop is un-triggered (manually deployed)
+M280 P${SERVO_HEATER_PIN} S${SERVO_ANGLES[DOWN]} I1 ; Deploy probe
+G4 P${SERVO_DELAY}                     ; time for servo to settle
+M280 P${SERVO_HEATER_PIN} S-1          ; disable servo
 
 ##########################################################################
 @file sys/retractprobe.g
 
-G1 Z2 F$((Z_SPEEDS[MEDIUM]*60))      ; retract probe
-G1 Z${Z_HOMING_LIFT} F$((Z_SPEEDS[MEDIUM]*60)) ; go to safe height to deploy trigger again if needed (BUG: G29 deploy before lift)
+M280 P${SERVO_HEATER_PIN} S${SERVO_ANGLES[UP]} I1 ; Retract probe   
+G4 P${SERVO_DELAY}                     ; time for servo to settle
+M280 P${SERVO_HEATER_PIN} S-1          ; disable servo
 
 ##########################################################################
 @file sys/homeall.g
@@ -98,9 +101,9 @@ M98 P"0:/sys/m_set_homing_speeds.g"    ; set lower Z speeds and accelerations
 ;G1 H1 X-$((X_LIMITS[MAX]+50)) Y-$((Y_LIMITS[MAX]+50)) F$((XY_SPEEDS[HOMING]*60)) ; move diagonally to hit X or Y
 ;G1 X5 Y5 F$((XY_SPEEDS[HOMING]*60))    ; go back a few mm
 G1 H1 Y-$((Y_LIMITS[MAX]+100)) F$((XY_SPEEDS[HOMING]*60)) ; move quickly to Y axis
-G1 Y5 F$((XY_SPEEDS[HOMING]*60))       ; go back a few mm
+G1 Y50 F$((XY_SPEEDS[HOMING]*60))      ; go back a few mm
 G1 H1 X-$((X_LIMITS[MAX]+100)) F$((XY_SPEEDS[HOMING]*60)) ; move quickly to X axis
-G1 X5 F$((XY_SPEEDS[HOMING]*60))       ; go back a few mm
+G1 X50 F$((XY_SPEEDS[HOMING]*60))      ; go back a few mm
 M98 P"0:/sys/m_set_normal_speeds.g"    ; set normal Z speeds and accelerations
 M913 X100 Y100                         ; set X Y motors to 100% of their normal current
 G90                                    ; absolute positioning
@@ -119,7 +122,7 @@ G1 H2 Z${Z_HOMING_LIFT} F$((Z_SPEEDS[MEDIUM]*60)) ; lift Z relative to current p
 M98 P"0:/sys/m_set_homing_speeds.g"    ; set lower speeds and accelerations
 M913 X60 Y60                           ; set X and Y motors to low current for homing
 G1 H1 X-$((X_LIMITS[MAX]+100)) F$((XY_SPEEDS[HOMING]*60)) ; move quickly to X axis endstop and stop there (first pass)
-G1 X5 F$((XY_SPEEDS[HOMING]*60))       ; go back a few mm
+G1 X50 F$((XY_SPEEDS[HOMING]*60))      ; go back a few mm
 M913 X100 Y100                         ; set X motor to 100% of the normal current
 M98 P"0:/sys/m_set_normal_speeds.g"    ; set normal speeds and accelerations
 ;G1 S1 Z-${Z_HOMING_LIFT} F$((Z_SPEEDS[MEDIUM]*60)) ; lower Z again (dangerous)
@@ -133,7 +136,7 @@ G1 H2 Z${Z_HOMING_LIFT} F$((Z_SPEEDS[MEDIUM]*60)) ; lift Z relative to current p
 M98 P"0:/sys/m_set_homing_speeds.g"    ; set lower speeds and accelerations
 M913 X60 Y60                           ; set X and Y motors to low current for homing
 G1 H1 Y-$((Y_LIMITS[MAX]+100)) F$((XY_SPEEDS[HOMING]*60)) ; move quickly to X axis endstop and stop there (first pass)
-G1 Y5 F$((XY_SPEEDS[HOMING]*60))       ; go back a few mm
+G1 Y50 F$((XY_SPEEDS[HOMING]*60))      ; go back a few mm
 M913 X100 Y100                         ; set X motor to 100% of the normal current
 M98 P"0:/sys/m_set_normal_speeds.g"    ; set normal speeds and accelerations
 ;G1 S1 Z-${Z_HOMING_LIFT} F$((Z_SPEEDS[MEDIUM]*60)) ; lower Z again (dangerous)
@@ -159,19 +162,19 @@ M561                                   ; clear any bed transform
 M401                                   ; deploy Z probe
 G30 P0 X10 Y150 Z-99999                ; probe point 1 (id 0)
 G30 P1 X210 Y150 Z-99999 S2            ; probe point 2 (id 1)
+M402                                   ; retract Z probe
 ; re-home Z (we don't want to call G28 Z because that will lift again)
 M98 P"0:/sys/m_center_probe.g"         ; move to center of bed
 M98 P"0:/sys/m_set_homing_speeds.g"    ; set lower speeds and accelerations
-G30                                    ; Do a single probe to re-home Z axis
+M98 P"0:/sys/m_probe_bed.g"            ; probe bed in many points
 M98 P"0:/sys/m_set_normal_speeds.g"    ; set normal speeds and accelerations
-M402                                   ; retract Z probe
 
 ##########################################################################
 @file sys/pause.g
 
 G10                                    ; retract
 G91                                    ; relative positioning
-G1 Z${Z_HOMING_LIFT} F$((Z_SPEEDS[MEDIUM]*60)) ; lift Z by a little (Z_HOMING_LIFT is just a random value here)
+G1 Z${Z_HOMING_LIFT} F$((Z_SPEEDS[MEDIUM]*60)) ; lift Z by a little
 G90                                    ; absolute positioning
 G1 X${PARK_POSITION[X]} Y${PARK_POSITION[Y]} F$((XY_SPEEDS[FAST]*60)) ; park head
 
@@ -187,7 +190,7 @@ G11                                    ; unretract
 
 M104 S0                                ; turn off extruder heater
 M140 S0                                ; turn off bed heater
-#M106 S0                                ; Disable fan
+M106 S0                                ; Disable fan
 M18                                    ; disable motors
 
 ##########################################################################
@@ -315,7 +318,7 @@ M915 Z S0 F1 R0                        ; set stall motor sensitivity and actions
 @file macros/Z_up_10mm.g
 
 G91                                    ; relative positioning
-G1 S2 Z10 F$((Z_SPEEDS[FAST]*60))      ; force Z up (no endstops / homing checks)
+G1 S2 Z10 F$((Z_SPEEDS[FAST]*60))       ; force Z up (no endstops / homing checks)
 G90                                    ; absolute positioning
 
 ##########################################################################
@@ -326,37 +329,39 @@ G90                                    ; absolute positioning
 M291 P"Start of Probe Offset Calibration? HOME ALL AXIS FIRST" R"WARNING" S3
 G90                                    ; Absolute positioning
 M98 P"0:/sys/m_center_nozzle.g"        ; move nozzle to center of bed
-#M561                                   ; Disable any current bed compensation
+M561                                   ; Disable any current bed compensation
 G29 S2                                 ; Clear mesh bed compensation perameters
-M291 P"Please wait while heating up" R"Please Wait" S0 T180
+M291 P"Please wait while heating up" R"Please Wait" S0 T120
 T0                                     ; Activate first tool
 M140 S60                               ; Set bed temp to 60 and release
-#M116 H0                                ; Wait for bed heating
+M116 H0                                ; Wait for bed heating
 M104 S210                              ; Set nozzle to 210 and release
 M116                                   ; Wait for all to heat
 M292                                   ; Acknowledge prior message
 G31 Z0                                 ; Reset zprobe trigger height
 G92 Z25                                ; Reset z to 25 to allow jogging up to touch bed to nozzle
-#M98 P"0:/sys/m_set_homing_speeds.g"    ; set lower Z speeds and accelerations
+M98 P"0:/sys/m_set_homing_speeds.g"    ; set lower Z speeds and accelerations
 M291 P"Make the nozzle touch the bed" R"Setting Z=0" Z1 S3
-G92 Z0                                 ; Set z = 0 (reference to new probe reading)
+G92 Z0                                 ; Set z = 0
 M98 P"0:/sys/m_center_probe.g"         ; move probe to center of bed
 
-G1 Z${Z_HOMING_LIFT} F$((Z_SPEEDS[SLOW]*60)) 
+; Do a bunch of probings and just print them on the log
+;
 M401                                   ; deploy Z probe
+G1 Z${PROBE_DIVE_HEIGHT} F$((Z_SPEEDS[SLOW]*60)) 
 ;M558 A5                                ; Set multiple probing at slower feed rate
 G30 S-3                                ; Probe to set probe height
 ;M558 A1                                ; Set single probing at faster feed rate
 M402                                   ; retract Z probe
+M500 P31                               ; save new probe height in config override
 
 ; Turn off heaters
 ; 
 M104 S0                                ; Set nozzle to 0 and release
 M140 S0                                ; Set bed to 0 and release
 
-#M98 P"0:/sys/m_set_normal_speeds.g"    ; set lower Z speeds and accelerations
+M98 P"0:/sys/m_set_normal_speeds.g"    ; set lower Z speeds and accelerations
 
-M500 P31                               ; save new probe height in config override
 M291 P"New probe trigger heigh has been saved to override-config."
 
 M98 P"0:/sys/m_beep.g"
@@ -394,7 +399,7 @@ M18                                    ; disable all stepper motors (better than
 ; WARNING: temperature must already be set for the current tool (G10 Snnn)
 ;          on the calling routine
 ;
-M291 P"Now loading..." S0 T180         ; Display new message
+M291 P"Now loading..." S0 T120         ; Display new message
 M98 P"0:/sys/m_beep.g"                 ; Warning Beep that your filament is starting to load!
 M83                                    ; Select relative extruder motion
 ;G1 E-1 F$((E_SPEEDS[FAST]*60))         ; Retract 1mm of filament to ensure that it is not flagged as stalled.
@@ -411,7 +416,7 @@ M292                                   ; Hide the message
 ; WARNING: temperature must already be set for the current tool (G10 Snnn)
 ;          on the calling routine
 ;
-M291 P"Unloading filament..." S0 T180  ; Display another message
+M291 P"Unloading filament..." S0 T120  ; Display another message
 M98 P"0:/sys/m_beep.g"                 ; Warning Beep that your filament is starting to retract!
 M83                                    ; Select relative extruder motion
 G1 E-$((LOAD_LENGHT-50)) F$((E_SPEEDS[FAST]*60)) ; Retract more filament at fast speed
@@ -441,7 +446,7 @@ M98 P"0:/sys/m_load_filament.g         ; Call macro for the rest of the work
 @file macros/Load_and_Unload/Load_ABS.g
 
 M291 P"Confirm Loading ABS?" R"Loading ABS" S3 T0
-M291 P"Please wait while heating up" R"Loading ABS" S0 T180
+M291 P"Please wait while heating up" R"Loading ABS" S0 T120
 G10 S${TEMP_ABS_LOAD}                  ; Set current tool temperature
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_load_filament.g         ; Call macro for the rest of the work
@@ -451,7 +456,7 @@ G10 S0                                 ; Turn off the heater again
 @file filaments/ABS/load.g
 
 #M291 P"Confirm Loading ABS?" R"Loading ABS" S3 T0
-M291 P"Please wait while heating up" R"Loading ABS" S0 T180
+M291 P"Please wait while heating up" R"Loading ABS" S0 T120
 G10 S${TEMP_ABS_LOAD}                  ; Set current tool temperature
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_load_filament.g         ; Call macro for the rest of the work
@@ -461,7 +466,7 @@ G10 S0                                 ; Turn off the heater again
 @file macros/Load_and_Unload/Load_PETG.g
 
 M291 P"Confirm Loading PETG?" R"Loading PETG" S3 T0
-M291 P"Please wait while heating up" R"Loading PETG" S0 T180
+M291 P"Please wait while heating up" R"Loading PETG" S0 T120
 G10 S${TEMP_PETG_LOAD}                 ; Set current tool temperature
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_load_filament.g         ; Call macro for the rest of the work
@@ -471,7 +476,7 @@ G10 S0                                 ; Turn off the heater again
 @file filaments/PETG/load.g
 
 #M291 P"Confirm Loading PETG?" R"Loading PETG" S3 T0
-M291 P"Please wait while heating up" R"Loading PETG" S0 T180
+M291 P"Please wait while heating up" R"Loading PETG" S0 T120
 G10 S${TEMP_PETG_LOAD}                 ; Set current tool temperature
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_load_filament.g         ; Call macro for the rest of the work
@@ -481,7 +486,7 @@ G10 S0                                 ; Turn off the heater again
 @file macros/Load_and_Unload/Load_PLA.g
 
 M291 P"Confirm Loading PLA?" R"Loading PLA" S3 T0
-M291 P"Please wait while heating up" R"Loading PLA" S0 T180
+M291 P"Please wait while heating up" R"Loading PLA" S0 T120
 G10 S${TEMP_PLA_LOAD}                  ; Set current tool temperature
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_load_filament.g         ; Call macro for the rest of the work
@@ -491,7 +496,7 @@ G10 S0                                 ; Turn off the heater again
 @file filaments/PLA/load.g
 
 #M291 P"Confirm Loading PLA?" R"Loading PLA" S3 T0
-M291 P"Please wait while heating up" R"Loading PLA" S0 T180
+M291 P"Please wait while heating up" R"Loading PLA" S0 T120
 G10 S${TEMP_PLA_LOAD}                  ; Set current tool temperature
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_load_filament.g         ; Call macro for the rest of the work
@@ -501,7 +506,7 @@ G10 S0                                 ; Turn off the heater again
 @file macros/Load_and_Unload/Unload_ABS.g
 
 M291 P"Confirm Unoading ABS?" R"Unloading ABS" S3 T0
-M291 P"Please wait while heating up" R"Unloading ABS" S0 T180
+M291 P"Please wait while heating up" R"Unloading ABS" S0 T120
 G10 S${TEMP_ABS_UNLOAD}                ; Heat up the current tool to 150C
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_unload_filament.g       ; Call macro for the rest of the work
@@ -511,7 +516,7 @@ G10 S0                                 ; Turn off the heater again
 @file filaments/ABS/unload.g
 
 #M291 P"Confirm Unoading ABS?" R"Unloading ABS" S3 T0
-M291 P"Please wait while heating up" R"Unloading ABS" S0 T180
+M291 P"Please wait while heating up" R"Unloading ABS" S0 T120
 G10 S${TEMP_ABS_UNLOAD}                ; Heat up the current tool to 150C
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_unload_filament.g       ; Call macro for the rest of the work
@@ -521,7 +526,7 @@ G10 S0                                 ; Turn off the heater again
 @file macros/Load_and_Unload/Unload_PETG.g
 
 M291 P"Confirm Unoading PETG?" R"Unloading PETG" S3 T0
-M291 P"Please wait while heating up" R"Unloading PETG" S0 T180
+M291 P"Please wait while heating up" R"Unloading PETG" S0 T120
 G10 S${TEMP_PETG_UNLOAD}               ; Heat up the current tool to 150C
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_unload_filament.g       ; Call macro for the rest of the work
@@ -531,7 +536,7 @@ G10 S0                                 ; Turn off the heater again
 @file filaments/PETG/unload.g
 
 #M291 P"Confirm Unoading PETG?" R"Unloading PETG" S3 T0
-M291 P"Please wait while heating up" R"Unloading PETG" S0 T180
+M291 P"Please wait while heating up" R"Unloading PETG" S0 T120
 G10 S${TEMP_PETG_UNLOAD}               ; Heat up the current tool to 150C
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_unload_filament.g       ; Call macro for the rest of the work
@@ -541,7 +546,7 @@ G10 S0                                 ; Turn off the heater again
 @file macros/Load_and_Unload/Unload_PLA.g
 
 M291 P"Confirm Unoading PLA?" R"Unloading PLA" S3 T0
-M291 P"Please wait while heating up" R"Unloading PLA" S0 T180
+M291 P"Please wait while heating up" R"Unloading PLA" S0 T120
 G10 S${TEMP_PLA_UNLOAD}                ; Heat up the current tool to 150C
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_unload_filament.g       ; Call macro for the rest of the work
@@ -551,7 +556,7 @@ G10 S0                                 ; Turn off the heater again
 @file filaments/PLA/unload.g
 
 #M291 P"Confirm Unoading PLA?" R"Unloading PLA" S3 T0
-M291 P"Please wait while heating up" R"Unloading PLA" S0 T180
+M291 P"Please wait while heating up" R"Unloading PLA" S0 T120
 G10 S${TEMP_PLA_UNLOAD}                ; Heat up the current tool to 150C
 M116                                   ; Wait for the temperatures to be reached
 M98 P"0:/sys/m_unload_filament.g       ; Call macro for the rest of the work
@@ -561,5 +566,6 @@ G10 S0                                 ; Turn off the heater again
 ##########################################################################
 @file macros/Level_Bed_G32.g
 
+G28                                    ; home
 G32                                    ; level bed using motors
 

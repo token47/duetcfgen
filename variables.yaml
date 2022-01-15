@@ -1,0 +1,121 @@
+#
+# ATTENTION: all speed values are mm/sec (they will be converted to mm/min if needed)
+#
+
+printer:
+    board: "duet2wifi"                          # duet2wifi or duet2ethernet
+    name: "name-of-printer"                     # name to appear on the interface
+    password: "webpassword"                     # password for web/ftp/telnet (default is no password)
+    net:
+        ip_address: "192.168.47.144"            # IP address to reach the duet
+        wifi.ssid: "yourssid"                   # ignored for duet2ethernet
+        wifi.password: "yourpassword"           # ignored for duet2ethernet
+
+# drivers settings
+drivers:
+    directions:                                 # direction of each driver/motor
+        driver0: 1
+        driver1: 0
+        driver2: 1
+        driver3: 0
+        driver4: 0
+    steps_mm:                                   # steps/mm for axis
+        x: 80.33
+        y: 80.33
+        z: 400.00
+        e: 500
+    current:                                    # in mA
+        normal:
+            x: 1400
+            y: 1400
+            z: 1400
+            e: 1400
+        idle: 50                                # % (percentage)
+    idle_timeout: 30                            # seconds
+
+# speeds, accelerations, jerk and moves
+movement:
+    axis_imits:                                 # maximum positions for carriage
+        x: { min: -10, max: 298 }
+        y: { min: -50, max: 284 }
+    bed_size:                                   # size of useable printer bed
+        x: 210
+        y: 315
+        z: 270
+    park_position:                              # position to park when pausing or finished
+        x: 0
+        y: 300
+        z: 270
+    speeds:
+        macros:                                 # speeds used in macros
+            xy:                                 # speed for X or Y movements
+                slow: 20
+                fast: 150
+                homing: 80
+            z:                                  # speed for Z movements 
+                slow: 3
+                medium: 8
+                fast: 20
+            e:                                  # speed for E movements
+                slow: 10
+                fast: 30
+                retraction: 30
+        absolute_max:                           # printer absolute speed limits (mm/s)
+            x: 150
+            y: 150
+            z: 30
+            e: 30
+    accel:                                      # (mm/s^2)
+        normal:                                 # for normal operations
+            x: 2500
+            y: 2500
+            z: 100
+            e: 9000
+            print: 2500
+            travel: 2500
+        homing:                                 # used only when homing
+            x: 500
+            y: 500
+            z: 50
+            e: 250
+            print: 500
+            travel = 500
+    jerk:                                       # max instantaneous speed changes (mm/s)
+        normal:                                 # for normal operations
+            x: 12
+            y: 12
+            z: 5
+            e: 10
+        homing:                                 # used only when homing
+            x: 0
+            y: 0
+            z: 0
+            e: 0
+
+# probe
+probe.heater_pin = 3                           # which heater pin has the servo motor
+probe.dive_height = 3                          # how much to lift when probing
+probe.offset = { x = 22.0, y = 0.0, z = 1.465 } # probe offset relative to nozzle
+servo.angles = { down = 95, up = 56 }          # angles for servo to deploy / retract probe
+servo.delay = 400                              # time to wait after deploying probe
+z_homing_lift = 5                              # mm to lift Z when homing to protect against clamps
+
+# mesh grid
+mesh.area = { x = "30:170", y = "20:280" }     # X/Y limits for probings
+mesh.step = "70:80"                            # distance between each probe
+bed_comp_taper = 5.0                           # bed compensation taper
+
+# tools
+pressure_advance = 0.05                        # pressure advance value
+firmware_retraction = 1.5                      # mm to retract by firmware
+
+# heaters tuning
+heater.h0 = "A102.1 C36.8  D0.4 S0.75 V12.3"   # heating parameters for heater 0 (bed)
+heater.h1 = "A674.5 C185.7 D4.8 S1.00 V12.3"   # heating parameters for heater 1 (hotend)
+
+# filament (um)loading and temperatures
+bowden_lenght = 720                            # in mm, lenght of filament to load/unload
+temp.abs = { load = 240, unload = 150 }        # ABS temperature for loading and unloading
+temp.pla = { load = 205, unload = 100 }        # PLA temperature for loading and unloading
+temp.petg = { load = 250, unload = 180 }       # PETG temperature for loading and unloading
+

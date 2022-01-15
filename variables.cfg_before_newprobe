@@ -4,7 +4,7 @@
 
 # declare the associative arrays
 declare -A X_LIMITS Y_LIMITS BED_SIZE STEPS_MM CURRENT PARK_POSITION
-declare -A XY_SPEEDS Z_SPEEDS E_SPEEDS PROBE_OFFSET
+declare -A XY_SPEEDS Z_SPEEDS E_SPEEDS SERVO_ANGLES PROBE_OFFSET
 declare -A JERK_HOMING JERK_NORMAL ACCEL_HOMING ACCEL_NORMAL
 declare -A MAXSPEEDS SPEED_HOMING SPEED_NORMAL DIRECTIONS
 
@@ -37,14 +37,17 @@ Z_SPEEDS=([SLOW]=3 [MEDIUM]=8 [FAST]=25) # speed for Z movements (used by macros
 E_SPEEDS=([SLOW]=5 [FAST]=45)           # speed for E movements (used by macros only)
 
 # probe
-Z_HOMING_LIFT=11                       # mm to lift Z when homing
-PROBE_DIVE_HEIGHT=2                    # how much the probe dives until triggering
-PROBE_OFFSET=([X]=0 [Y]=66)            # probe offset relative to nozzle BEWARE it may be overriden in config-override
+SERVO_HEATER_PIN=3                     # which heater pin has the servo motor
+Z_HOMING_LIFT=5                        # mm to lift Z when homing
+PROBE_DIVE_HEIGHT=3                    # how much to lift when probing
+PROBE_OFFSET=([X]=-20.0 [Y]=4.0)       # probe offset relative to nozzle BEWARE it may be overriden in config-override
+SERVO_ANGLES=([DOWN]=95 [UP]=56)       # angles for servo to deploy / retract probe
+SERVO_DELAY=300                        # time to wait after deploying probe
 
 # mesh grid
-MESH_X="5:195"                         # X limits
-MESH_Y="60:280"                        # Y limits
-MESH_STEP="47:36"                      # distance between probes
+MESH_X="15:185"                        # X limits
+MESH_Y="20:280"                        # Y limits
+MESH_STEP="56:52"                      # distance between probes
 BED_COMP_TAPER="2.0"                   # bed compensation taper
 
 # tools

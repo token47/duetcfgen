@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 
-# Duet config generator, by Andre Ruiz <andre.ruiz@gmail.com>
+# Duet config generator, by Andre Ruiz <andre.ruiz @ gmail.com>
 # Please contribute at https://github.com/token47/duetcfgen
-# Note: I'm not an experienced programmer, if you feel an uncontrollable need to fix my
-#       mistakes, please do it and send changes back to me, I'll appreciate.
 
 import sys, os, re, shutil
 import tomlkit as toml
